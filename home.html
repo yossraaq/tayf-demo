@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>طيف | العمل في بيتك</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="config.js"></script>
+  <!-- model-viewer: يفتح Quick Look في الآيفون و Scene Viewer في الأندرويد -->
+  <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"></script>
+</head>
+<body>
+  <main class="home">
+    <a class="back-link" href="index.html">رجوع</a>
+    <h1 class="brand" style="font-size:40px;margin:8px 0 4px">طيف</h1>
+    <h2 id="title" style="margin:0"></h2>
+    <p class="artist" id="artist" style="color:var(--sand);margin:2px 0 16px"></p>
+
+    <div id="viewer-slot"></div>
+
+    <p class="note">
+      اضغطي «شاهديه في مكانك» ووجّهي الجوال نحو الأرض، وبيظهر العمل في غرفتك.
+    </p>
+  </main>
+
+  <script>
+    const C = window.TAYF;
+    document.getElementById("title").textContent = C.artwork.title;
+    document.getElementById("artist").textContent = C.artwork.artist;
+    tayfTrack("home_view");
+
+    const slot = document.getElementById("viewer-slot");
+    if (!C.useModel) {
+      slot.innerHTML =
+        '<p class="note" style="padding:24px;border:1px dashed var(--line);border-radius:14px">' +
+        "النسخة المنزلية تحتاج ملف GLB. ضعيه في assets/artwork.glb وغيّري useModel إلى true في config.js." +
+        "</p>";
+    } else {
+      slot.innerHTML = `
+        <model-viewer src="${C.modelSrc}" alt="${C.artwork.title}"
+          ar ar-modes="webxr scene-viewer quick-look" ar-placement="floor"
+          camera-controls auto-rotate shadow-intensity="1" touch-action="pan-y">
+          <button slot="ar-button" class="btn ar-btn">شاهديه في مكانك</button>
+        </model-viewer>`;
+      slot.querySelector("model-viewer").addEventListener("ar-status", (e) => {
+        tayfTrack("home_ar", { status: e.detail.status });
+      });
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>طيف | ممشى فني بالواقع المعزز</title>
+  <meta name="theme-color" content="#0e0d0b" />
+  <link rel="stylesheet" href="style.css" />
+  <script src="config.js"></script>
+</head>
+<body>
+  <main class="landing">
+    <header>
+      <h1 class="brand">طيف</h1>
+      <p class="tagline">ممشى فني بالواقع المعزز · كورنيش الخبر</p>
+    </header>
+
+    <section class="station">
+      <div class="station-label" id="station-label">المحطة ١</div>
+      <h2 id="title"></h2>
+      <p class="artist" id="artist"></p>
+    </section>
+
+    <ol class="steps">
+      <li><span class="n">١</span><span>اضغطي «ابدأ التجربة» واسمحي باستخدام الكاميرا.</span></li>
+      <li><span class="n">٢</span><span>وجّهي الكاميرا نحو لوحة «طيف» المثبتة أمامك.</span></li>
+      <li><span class="n">٣</span><span>شاهدي العمل يظهر في مكانه، وتحرّكي حوله.</span></li>
+    </ol>
+
+    <div class="actions">
+      <a class="btn" href="ar.html" onclick="tayfTrack('start')">ابدأ التجربة</a>
+      <a class="btn ghost" href="home.html">خذ العمل لبيتك</a>
+      <p class="fineprint">
+        تعمل من المتصفح مباشرة على الآيفون والأندرويد، بدون تحميل تطبيق.
+        <br /><a href="assets/card.png" target="_blank">صورة اللوحة للتجربة</a>
+      </p>
+    </div>
+  </main>
+
+  <script>
+    const a = window.TAYF.artwork;
+    document.getElementById("title").textContent = a.title;
+    document.getElementById("artist").textContent = a.artist;
+    tayfTrack("landing_view", { ref: document.referrer || "qr" });
+  </script>
+</body>
+</html>

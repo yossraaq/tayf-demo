@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>طيف | التجربة</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="config.js"></script>
+  <!-- A-Frame 1.4.1 هو الإصدار الذي تستخدمه أمثلة MindAR 1.2.5 -->
+  <script src="https://aframe.io/releases/1.4.1/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+  <style>
+    body { overflow: hidden; }
+    a-scene { position: fixed; inset: 0; }
+  </style>
+</head>
+<body>
+  <a class="back-link" href="index.html">رجوع</a>
+
+  <!-- تحميل -->
+  <div class="overlay loading" id="loading">
+    <div class="spinner"></div>
+    <div>جاري تشغيل الكاميرا…</div>
+  </div>
+
+  <!-- إطار البحث عن اللوحة -->
+  <div class="overlay hidden" id="scanning"><div class="scan-frame"></div></div>
+  <div class="scan-hint hidden" id="scan-hint">وجّهي الكاميرا نحو لوحة «طيف»</div>
+
+  <!-- خطأ في الكاميرا -->
+  <div class="overlay error-box hidden" id="error">
+    <h3>ما قدرنا نشغّل الكاميرا</h3>
+    <p class="fineprint">
+      تأكدي إنك سمحتي للمتصفح باستخدام الكاميرا، وإن الرابط يبدأ بـ https.
+      لو تستخدمين متصفح داخل تطبيق (إنستقرام مثلاً)، افتحي الرابط في Safari أو Chrome.
+    </p>
+    <a class="btn" href="ar.html">حاولي مرة ثانية</a>
+  </div>
+
+  <!-- بطاقة معلومات العمل -->
+  <aside class="info-sheet" id="info">
+    <h3 id="info-title"></h3>
+    <div class="artist" id="info-artist"></div>
+    <p id="info-desc"></p>
+    <a class="btn ghost" href="home.html" onclick="tayfTrack('take_home_click')">خذ العمل لبيتك</a>
+  </aside>
+
+  <div id="scene-root"></div>
+
+  <script>
+    (function () {
+      const C = window.TAYF;
+      const $ = (id) => document.getElementById(id);
+
+      $("info-title").textContent = C.artwork.title;
+      $("info-artist").textContent = C.artwork.artist;
+      $("info-desc").textContent = C.artwork.description;
+
+      // المجسم: GLB لو موجود، وإلا مجسم تجريبي مبني بالكود
+      const artwork = C.useModel
+        ? `<a-gltf-model src="${C.modelSrc}" position="${C.modelPosition}"
+             rotation="${C.modelRotation}" scale="${C.modelScale}"></a-gltf-model>`
+        : `<a-entity position="0 0 0.25" scale="${C.modelScale}">
+             <a-torus radius="0.55" radius-tubular="0.012" color="#d9b77e"
+               material="emissive:#b38b4d; emissiveIntensity:0.6; opacity:0.95; transparent:true"
+               animation="property: rotation; from: 0 0 0; to: 0 360 0; dur: 9000; loop: true; easing: linear"></a-torus>
+             <a-torus radius="0.42" radius-tubular="0.01" color="#f3ece0"
+               material="opacity:0.7; transparent:true"
+               animation="property: rotation; from: 90 0 0; to: 90 360 0; dur: 7000; loop: true; easing: linear"></a-torus>
+             <a-torus radius="0.3" radius-tubular="0.008" color="#d9b77e"
+               material="opacity:0.55; transparent:true"
+               animation="property: rotation; from: 45 0 0; to: 45 0 360; dur: 5000; loop: true; easing: linear"></a-torus>
+             <a-sphere radius="0.09" color="#f3ece0"
+               material="emissive:#d9b77e; emissiveIntensity:0.8"
+               animation="property: position; from: 0 -0.05 0; to: 0 0.05 0; dir: alternate; dur: 1800; loop: true; easing: easeInOutSine"></a-sphere>
+           </a-entity>`;
+
+      // نبني المشهد بالكود عشان مسار اللوحة يجي من config.js
+      $("scene-root").innerHTML = `
+        <a-scene
+          mindar-image="imageTargetSrc: ${C.targetSrc}; uiLoading: no; uiScanning: no; uiError: no; filterMinCF: 0.0001; filterBeta: 0.001"
+          color-space="sRGB"
+          renderer="colorManagement: true, physicallyCorrectLights"
+          vr-mode-ui="enabled: false"
+          device-orientation-permission-ui="enabled: false">
+          <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+          <a-entity light="type: ambient; intensity: 0.9"></a-entity>
+          <a-entity light="type: directional; intensity: 1.2" position="0.5 1 1"></a-entity>
+          <a-entity id="target" mindar-image-target="targetIndex: 0">${artwork}</a-entity>
+        </a-scene>`;
+
+      const scene = document.querySelector("a-scene");
+      const target = document.getElementById("target");
+      let foundAt = null;
+      let firstFound = true;
+
+      function showScanning(on) {
+        $("scanning").classList.toggle("hidden", !on);
+        $("scan-hint").classList.toggle("hidden", !on);
+      }
+
+      scene.addEventListener("arReady", () => {
+        $("loading").classList.add("hidden");
+        showScanning(true);
+        tayfTrack("ar_ready");
+      });
+
+      scene.addEventListener("arError", (e) => {
+        $("loading").classList.add("hidden");
+        $("error").classList.remove("hidden");
+        tayfTrack("ar_error");
+      });
+
+      target.addEventListener("targetFound", () => {
+        showScanning(false);
+        $("info").classList.add("show");
+        foundAt = Date.now();
+        tayfTrack("target_found", { first: firstFound });
+        firstFound = false;
+      });
+
+      target.addEventListener("targetLost", () => {
+        showScanning(true);
+        $("info").classList.remove("show");
+        if (foundAt) {
+          tayfTrack("view_time", { seconds: Math.round((Date.now() - foundAt) / 1000) });
+          foundAt = null;
+        }
+      });
+
+      // إيقاف الكاميرا عند مغادرة الصفحة
+      window.addEventListener("pagehide", () => {
+        try { scene.systems["mindar-image-system"].stop(); } catch (e) {}
+      });
+    })();
+  </script>
+</body>
+</html>
