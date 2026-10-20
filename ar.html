@@ -10,7 +10,7 @@
   <script src="https://aframe.io/releases/1.4.1/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
   <style>
-        html, body { overflow: hidden; background: transparent; height: 100%; }
+    html, body { overflow: hidden; background: transparent; height: 100%; }
     #scene-root { position: fixed; inset: 0; overflow: hidden; }
   </style>
 </head>
@@ -56,24 +56,54 @@
       $("info-artist").textContent = C.artwork.artist;
       $("info-desc").textContent = C.artwork.description;
 
-      // المجسم: GLB لو موجود، وإلا مجسم تجريبي مبني بالكود
+      // «عمود الطيف»: حلقات بألوان اللوحة تطلع من قلب القرص باتجاه الزائر
+      // مركز القرص في لوحة طيف: x = 0.03 ، y = 0.125 (عرض اللوحة = 1)
+      function spectrumSculpture() {
+        const PAL = ["#b38b4d", "#185c68", "#c4482a", "#eea834", "#343a78", "#f3ece0", "#d9b77e", "#1c1816"];
+        const N = 14;
+        let rings = "";
+        let topZ = 0;
+        for (let i = 0; i < N; i++) {
+          const t = i / (N - 1);
+          const r = (0.34 * (1 - 0.72 * t)).toFixed(3);
+          const z = (0.015 + i * 0.055);
+          const tube = (0.006 + 0.016 * (1 - 0.4 * t)).toFixed(4);
+          const arc = i % 3 === 0 ? 360 : 200 + ((i * 67) % 150); // حلقات مكسورة مثل اللوحة
+          const c = PAL[i % PAL.length];
+          const r0 = (i * 53) % 360;
+          const dir = i % 2 ? 360 : -360;
+          const dur = 6000 + ((i * 937) % 6000);
+          rings += `
+            <a-entity position="0 0 ${z.toFixed(3)}"
+              animation="property: position; from: 0 0 ${z.toFixed(3)}; to: 0 0 ${(z + 0.02).toFixed(3)}; dir: alternate; dur: ${2000 + i * 150}; delay: ${i * 120}; loop: true; easing: easeInOutSine">
+              <a-torus radius="${r}" radius-tubular="${tube}" arc="${arc}" segments-tubular="64"
+                material="color: ${c}; emissive: ${c}; emissiveIntensity: 0.35; roughness: 0.55; metalness: 0.1"
+                rotation="0 0 ${r0}"
+                animation="property: rotation; from: 0 0 ${r0}; to: 0 0 ${r0 + dir}; dur: ${dur}; loop: true; easing: linear"></a-torus>
+            </a-entity>`;
+          topZ = z;
+        }
+        const coreZ = (topZ + 0.07).toFixed(3);
+        return `
+          <a-entity id="sculpture" position="0.03 0.125 0"
+            animation__rise="property: scale; from: 0.001 0.001 0.001; to: 1 1 1; dur: 1100; easing: easeOutBack; startEvents: rise">
+            ${rings}
+            <a-sphere radius="0.035" position="0 0 ${coreZ}"
+              material="color: #f3ece0; emissive: #f3ece0; emissiveIntensity: 0.8"></a-sphere>
+            <a-entity position="0 0 ${coreZ}"
+              animation="property: rotation; from: 0 0 0; to: 0 0 360; dur: 4000; loop: true; easing: linear">
+              <a-sphere radius="0.014" position="0.09 0 0" material="color: #eea834; emissive: #eea834; emissiveIntensity: 0.6"></a-sphere>
+              <a-sphere radius="0.011" position="-0.07 0.05 0" material="color: #185c68; emissive: #185c68; emissiveIntensity: 0.6"></a-sphere>
+              <a-sphere radius="0.009" position="0 -0.11 0" material="color: #c4482a; emissive: #c4482a; emissiveIntensity: 0.6"></a-sphere>
+            </a-entity>
+          </a-entity>`;
+      }
+
+      // المجسم: GLB لو موجود، وإلا «عمود الطيف»
       const artwork = C.useModel
         ? `<a-gltf-model src="${C.modelSrc}" position="${C.modelPosition}"
              rotation="${C.modelRotation}" scale="${C.modelScale}"></a-gltf-model>`
-        : `<a-entity position="0 0 0.25" scale="${C.modelScale}">
-             <a-torus radius="0.55" radius-tubular="0.012" color="#d9b77e"
-               material="emissive:#b38b4d; emissiveIntensity:0.6; opacity:0.95; transparent:true"
-               animation="property: rotation; from: 0 0 0; to: 0 360 0; dur: 9000; loop: true; easing: linear"></a-torus>
-             <a-torus radius="0.42" radius-tubular="0.01" color="#f3ece0"
-               material="opacity:0.7; transparent:true"
-               animation="property: rotation; from: 90 0 0; to: 90 360 0; dur: 7000; loop: true; easing: linear"></a-torus>
-             <a-torus radius="0.3" radius-tubular="0.008" color="#d9b77e"
-               material="opacity:0.55; transparent:true"
-               animation="property: rotation; from: 45 0 0; to: 45 0 360; dur: 5000; loop: true; easing: linear"></a-torus>
-             <a-sphere radius="0.09" color="#f3ece0"
-               material="emissive:#d9b77e; emissiveIntensity:0.8"
-               animation="property: position; from: 0 -0.05 0; to: 0 0.05 0; dir: alternate; dur: 1800; loop: true; easing: easeInOutSine"></a-sphere>
-           </a-entity>`;
+        : spectrumSculpture();
 
       // نبني المشهد بالكود عشان مسار اللوحة يجي من config.js
       $("scene-root").innerHTML = `
@@ -114,6 +144,8 @@
       target.addEventListener("targetFound", () => {
         showScanning(false);
         $("info").classList.add("show");
+        const s = document.getElementById("sculpture");
+        if (s) s.emit("rise");
         foundAt = Date.now();
         tayfTrack("target_found", { first: firstFound });
         firstFound = false;
