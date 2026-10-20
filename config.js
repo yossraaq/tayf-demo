@@ -16,7 +16,7 @@ window.TAYF = {
 
   // ملف صورة اللوحة بعد تحويلها في MindAR Compiler
   // (للتجربة: assets/card.mind ويطابق assets/card.png)
-  targetSrc: "assets/card.mind",
+  targetSrc: "assets/target.mind",
 
   // ضعي مجسمك بصيغة GLB في assets/artwork.glb ثم غيّري إلى true
   // لو false: يظهر مجسم تجريبي مبني بالكود
